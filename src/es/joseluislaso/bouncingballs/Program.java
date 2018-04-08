@@ -11,7 +11,7 @@ public class Program {
 
         Motor motor = Motor.getInstance();
 
-        int numballs = 10;
+        int numballs = 25;
         Ball[] ball = new Ball[numballs];
 
         Color[] color = {

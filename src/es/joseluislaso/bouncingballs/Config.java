@@ -10,7 +10,7 @@ final class Config {
 
 	// relatives to main window
     final static String TITLE   = "Bouncing balls by Joseluis Laso";
-    final static int	WIDTH   = 650;
+    final static int	WIDTH   = 1350;
     final static int    HEIGHT  = 650;
     final static Color  BGCOLOR = new Color(200,200,200);
 

@@ -1,5 +1,7 @@
 This started as a UNED practice and I reviewed it trying to apply some best practices I learned so far.
 
+[![Video demo](https://img.youtube.com/vi/xMKnpDBedRA/0.jpg)](https://youtu.be/xMKnpDBedRA)
+
 I use IntelliJ IDEA from JetBrains, it's easy as clone the project and File -> New -> Project from existing sources...
 but I think it can be compiled/opened with others IDEs
 
@@ -22,6 +24,7 @@ past movements)
 1) "R" the opposite to "T",  transparency goes from 50 to 255
 1) "P" moves the first ball to the right (0º direction)
 1) "O" moves the first ball to the left  (180º direction)
+1) "Esc" or "Q"  terminates program
 
 # Notes
 
