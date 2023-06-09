@@ -4,15 +4,17 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.Serial;
 import java.util.ArrayList;
 
 import javax.swing.*;
 
 class Motor extends JFrame implements Runnable {
 
+    @Serial
     private static final long serialVersionUID = -4924123182844968930L;
     private static Motor motorSingleton;
-    private final static int NO_CHANGE = 9999;
+    private final static double NO_CHANGE = 9999;
 
     /**
      * Factory method to get the canvas singleton object.
@@ -26,12 +28,12 @@ class Motor extends JFrame implements Runnable {
     }
 
     // instance part
-    private JFrame frame;
-    private CanvasPane canvas;
+    private final JFrame frame;
+    private final CanvasPane canvas;
     private Graphics2D graphic;
     private Color backgroundColor;
     private Image canvasImage;
-    private ArrayList<Ball> balls;
+    private final ArrayList<Ball> balls;
     private int t;
     private int dir;
     private boolean move = true;
@@ -92,14 +94,8 @@ class Motor extends JFrame implements Runnable {
             t = e.getKeyChar();
             // to vary first ball's direction 
             switch (t) {
-                case 'O':
-                case 'o':
-                    dir = -1;
-                    break;
-                case 'P':
-                case 'p':
-                    dir = 1;
-                    break;
+                case 'O', 'o' -> dir = -1;
+                case 'P', 'p' -> dir = 1;
             }
         }
 
@@ -175,17 +171,20 @@ class Motor extends JFrame implements Runnable {
         erase();
         // work frame where balls bounce
         graphic.drawRect(Config.MARGIN, Config.MARGIN,
-                Config.WIDTH - (2 * Config.MARGIN) - 1, Config.HEIGHT - Config.MARGIN - Config.BOTTOM_MARGIN - 1);
+                Config.WIDTH - (2 * Config.MARGIN) - 1,
+                Config.HEIGHT - Config.MARGIN - Config.BOTTOM_MARGIN - 1);
         // angle guide
         if (debug) {
             Color previousColor = graphic.getColor();
             graphic.setColor(Color.gray);
+            int cx = Config.CENTERX;
+            int cy = Config.CENTERY + 15;
             for (int a = 0; a < 360; a += 15) {
-                int x = Config.CENTERX + (int) (Math.cos(Math.toRadians(a)) * (Config.WIDTH_E - 40) / 2);
-                int y = Config.CENTERY + (int) (Math.sin(Math.toRadians(a)) * (Config.HEIGHT_E - 40) / 2);
-                graphic.drawLine(Config.CENTERX, Config.CENTERY, x, y);
-                graphic.setColor(Color.darkGray);
-                graphic.drawString("" + a, x, y);
+                int x = cx + (int) (Math.cos(Math.toRadians(a)) * (Config.WIDTH_E - 40) / 2);
+                int y = cy + (int) (Math.sin(Math.toRadians(a)) * (Config.HEIGHT_E - 40) / 2);
+                graphic.drawLine(cx, cy, x, y);
+                graphic.setColor(Color.gray);
+                graphic.drawString(String.valueOf(a), x, y);
             }
             graphic.setColor(previousColor);
         }
@@ -200,12 +199,14 @@ class Motor extends JFrame implements Runnable {
                 int row = -1 + (b.getNumber() - 1) % nn;
                 int x = Config.MARGIN + col * (Config.WIDTH_E / nn);
                 int y = 10 + Config.HEIGHT_E + 2 * Config.MARGIN + row * (Config.BOTTOM_MARGIN / nn);
-                graphic.drawString("" + b.getNumber() +
-                        ": a=" + (int) Math.toDegrees(b.getAngle()) +
-                        ", s=" + b.getSpeed(), x, y);
-            }
-            if (debug)
+                graphic.drawString(b.getNumber() +
+                        ": a=" + b.getDegreesAngle() +
+                        ", s=" + b.getSpeed() +
+                        ", L=" + (Config.WIDTH_E - b.getCenterX() - b.getRadius()) +
+                        ", B=" + (Config.HEIGHT_E - b.getCenterY() - b.getRadius())
+                        , x, y);
                 drawDirectionGuides(b);
+            }
         }
         canvas.repaint();
     }
@@ -215,82 +216,148 @@ class Motor extends JFrame implements Runnable {
      * moves the ball in the right direction
      */
     private void move(Ball ball) {
-        // just in case
-        if (ballOutOfWorld(ball)) {
-            ball.setCoords(Config.CENTERX, Config.CENTERY);
-            ball.setSpeed(0); // stops it
-            return;
-        }
         ball.move();
         // checks if the balls bounces with margins
         double a = checkBouncingWithWall(ball);
         if (a != NO_CHANGE) {
-            ball.setAngle(a);
-            ball.move();
+            if (debug) System.out.println(a % 360);
+            ball.setDegreesAngle(a);
         }
+        encloseBall(ball);
         // check hits with other balls
-        for (Ball b : balls) {
-            if (b.getNumber() > ball.getNumber()) {
-                double overlap = ball.overlappingDistance(b);
-                if (overlap <= 0) {
-                    if (overlap < 2) {
-                        ball.interchangeOfMater(b);
-                    }
-                    // two balls bounce
-                    // play with speeds, checked ball slows down and the other speed up
-                    ball.slowDownWithoutStop();
-                    b.accelerate();
-                    // calculate angles of collision
-                    double resultAngle = ball.collisionAngle(b);
-                    b.setAngle(resultAngle);
-                    if (Config.STOPBY)
-                        move = false;
-                }
-            }
+//        for (Ball b : balls) {
+//            if (b.getNumber() > ball.getNumber()) {
+//                double overlap = ball.overlappingDistance(b);
+//                if (overlap <= 0) {
+////                    if (overlap < 2) {
+////                        ball.interchangeOfMater(b);
+////                    }
+//                    // two balls bounce
+//                    // play with speeds, checked ball slows down and the other speed up
+//                    //ball.slowDownWithoutStop();
+//                    //b.accelerate();
+//                    // calculate angles of collision
+//                    double resultAngle = ball.collisionAngle(b);
+//                    b.setRadiansAngle(resultAngle);
+//                    if (Config.STOPBY) move = false;
+//                }
+//            }
+//        }
+        if (ballOutOfWorld(ball)) {
+            //ball.setCoords(Config.CENTERX, Config.CENTERY);
+            ball.setSpeed(Ball.MIN_SPEED);
+            //System.out.println("OH!");
+            // return;
         }
     }
 
     private boolean ballOutOfWorld(Ball b) {
-        return b.amIoutOf(0, 0, Config.WIDTH, Config.HEIGHT_E + 10);
+        return b.amIoutOf(0, 0, Config.WIDTH, Config.HEIGHT - Config.MARGIN);
     }
 
     private void drawDirectionGuides(Ball ball) {
-        int dist = 2 * ball.getSpeed() * ball.getRadius();
-        double a = ball.getAngle();
-        int centerX = (int) Math.round(ball.getCenterX());
-        int centerY = (int) Math.round(ball.getCenterY());
+        int dist = Math.max(Config.WIDTH, Config.HEIGHT); //2 * ball.getSpeed() * ball.getRadius();
+        double a = ball.getRadiansAngle();
+        int centerX = ball.getCenterX();
+        int centerY = ball.getCenterY();
         int xDest = centerX + (int) Math.round(Math.cos(a) * dist);
         int yDest = centerY + (int) Math.round(Math.sin(a) * dist);
-
+        // graphic.setColor(ball.getColor());
         graphic.drawLine(centerX, centerY, xDest, yDest);
     }
 
-    private double checkBouncingWithWall(Ball b) {
-        int x = (int) Math.round(b.getCenterX());
-        int y = (int) Math.round(b.getCenterY());
+    void encloseBall(Ball b) {
+        int x = b.getCenterX();
+        int y = b.getCenterY();
         int r = b.getRadius();
-        double ang = (360 + (int) Math.toDegrees(b.getAngle())) % 360;
-        if ((ang >= 90) && (ang < 270) && (x - r <= Config.MARGIN)) {
-            if (ang >= 180) ang = (540 - ang) % 360;
-            else ang = (180 - ang) % 360;
-            if (debug) System.out.print("|<");
-            return Math.toRadians(ang);
+        if (x - r < Config.MARGIN) x = Config.MARGIN + 1 + r;
+        if (y -r < Config.MARGIN) y = Config.MARGIN + 1 + r;
+        if (x + r > Config.WIDTH_E) {
+            x = Config.WIDTH_E - r - 1;
         }
-        if ((ang >= 270 || ang < 90) && (x + r >= Config.WIDTH_E)) {
-            if (ang >= 270) ang = (540 - ang) % 360;
-            else ang = (180 - ang) % 360;
+        if (y + r > Config.HEIGHT_E) {
+            y = Config.HEIGHT_E - r - 1;
+        }
+        b.setCoords(x, y);
+    }
+
+    private double checkBouncingWithWall(Ball b) {
+        int centerX = b.getCenterX();
+        int centerY = b.getCenterY();
+        int r = b.getRadius();
+        double ang = b.getDegreesAngle();
+        int topDiff = (centerY - r) - Config.MARGIN;
+        int bottomDiff = Config.HEIGHT_E - (centerY + r);
+        // if (bottomDiff < 0) System.out.println("ang=" + ang  +",bottomDif=" +  bottomDiff);
+        int leftDiff = (centerX - r) - Config.MARGIN;
+        int rightDiff = Config.WIDTH_E - (centerX + r);
+        double variation = 2.5 - Math.random() * 5;
+
+        /*
+         *   3 | 4
+         *   -----
+         *   2 | 1*
+         */
+        if (ang >= 0 && ang < 90 && Math.min(bottomDiff, rightDiff) <= 0){
+            if (bottomDiff < rightDiff){
+                //if (debug)
+                    System.out.print("v");
+                    b.moveToTop(-bottomDiff);
+                return ang + 270 + variation;
+            }
+            // frameDuration = 2 * frameDuration;
+            //if (debug)
+                System.out.print(">|");
+            b.moveToLeft(-rightDiff);
+            return 90 + ang + variation;
+        }
+
+        /*
+         *   3 | 4*
+         *   -----
+         *   2 | 1
+         */
+        if (ang >= 270 && Math.min(topDiff, rightDiff) <= 0){
+            if (topDiff < rightDiff){
+                if (debug) System.out.print("^");
+                b.moveToBottom(-topDiff);
+                return ang + 90 + variation;
+            }
             if (debug) System.out.print(">|");
-            return Math.toRadians(ang);
+            b.moveToLeft(-rightDiff);
+            return ang - 90 + variation;
         }
-        if ((ang >= 180) && (ang < 360) && (y - r <= Config.MARGIN)) {
-            ang = (360 - ang) % 360;
-            if (debug) System.out.print("^");
-            return Math.toRadians(ang);
+
+        /*
+         *  *3 | 4
+         *   -----
+         *   2 | 1
+         */
+        if (ang >= 180 && ang <= 270 && Math.min(topDiff, leftDiff) <= 0){
+            if (topDiff < leftDiff){
+                if (debug) System.out.print("^");
+                b.moveToBottom(-topDiff);
+                return ang - 90 + variation;
+            }
+            if (debug) System.out.print("|<");
+            b.moveToRight(-leftDiff);
+            return ang + 90 + variation;
         }
-        if ((ang >= 0) && (ang < 180) && (y + r >= Config.HEIGHT_E)) {
-            ang = (360 - ang) % 360;
-            if (debug) System.out.print("v");
-            return Math.toRadians(ang);
+
+        /*
+         *   3 | 4
+         *   -----
+         *  *2 | 1
+         */
+        if (ang >= 90 && ang <= 180 && Math.min(bottomDiff, leftDiff) <= 0){
+            if (bottomDiff < leftDiff){
+                if (debug) System.out.print("v");
+                b.moveToTop(-bottomDiff);
+                return ang + 90 + variation;
+            }
+            if (debug) System.out.print("|<");
+            b.moveToRight(-leftDiff);
+            return ang - 90 + variation;
         }
 
         return NO_CHANGE;
@@ -305,6 +372,7 @@ class Motor extends JFrame implements Runnable {
         /**
          *
          */
+        @Serial
         private static final long serialVersionUID = 2755881253952166777L;
 
         @Override
@@ -317,11 +385,12 @@ class Motor extends JFrame implements Runnable {
     public void run() {
         while (process) {
             long t1 = System.currentTimeMillis();
-            if (move)  // this is controlled by user with spacebar
+            if (move)  // this is controlled by user with the space bar
             {
                 for (Ball b : balls) {
-                    if (b.getNumber() == 1 && dir > 0) b.setAngle(0);
-                    if (b.getNumber() == 1 && dir < 0) b.setAngle(Math.PI);
+                    // dir changes when user presses O or P keys
+                    if (b.getNumber() == 1 && dir > 0) b.setDegreesAngle(0);
+                    if (b.getNumber() == 1 && dir < 0) b.setDegreesAngle(180);
                     // if (debug) System.out.print(">:" + b.getNumber() + ":  ");
                     move(b);
                     // if (debug) System.out.println("");
@@ -332,10 +401,31 @@ class Motor extends JFrame implements Runnable {
                                 try {
                                     Thread.sleep(10);
                                 } catch (InterruptedException ex) {
-
+                                    System.out.println(ex.getMessage());
                                 }
                             }
                             stopby = true;
+                        }
+                    }
+                }
+
+                for (Ball ball: balls) {
+                    for (Ball b : balls) {
+                        if (b.getNumber() > ball.getNumber()) {
+                            double overlap = ball.overlappingDistance(b);
+                            if (overlap <= 0) {
+//                    if (overlap < 2) {
+//                        ball.interchangeOfMater(b);
+//                    }
+                                // two balls bounce
+                                // play with speeds, checked ball slows down and the other speed up
+                                //ball.slowDownWithoutStop();
+                                //b.accelerate();
+                                // calculate angles of collision
+                                double resultAngle = ball.collisionAngle(b);
+                                b.setRadiansAngle(resultAngle);
+                                if (Config.STOPBY) move = false;
+                            }
                         }
                     }
                 }
@@ -347,7 +437,7 @@ class Motor extends JFrame implements Runnable {
                 try {
                     Thread.sleep(t);
                 } catch (InterruptedException ex) {
-
+                    System.out.println(ex.getMessage());
                 }
             }
         }

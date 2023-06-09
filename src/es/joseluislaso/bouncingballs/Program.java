@@ -11,22 +11,22 @@ public class Program {
 
         Motor motor = Motor.getInstance();
 
-        int numballs = 25;
-        Ball[] ball = new Ball[numballs];
+        int numBalls = 6;
+        Ball[] ball = new Ball[numBalls];
 
         Color[] color = {
-                Color.orange, Color.gray, Color.cyan,
+                Color.blue, Color.orange, Color.gray, Color.cyan,
                 Color.green, Color.lightGray, Color.yellow,
                 Color.magenta, Color.pink, Color.red,
-                Color.white, Color.blue, Color.darkGray,
+                Color.white, Color.darkGray,
         };
 
         int dx = 65;
         int dy = 65;
-        double y = Config.MARGIN + 15;
-        double x = Config.MARGIN + 15;
+        int y = Config.CENTERX; //Config.MARGIN + 15;
+        int x = Config.CENTERY; //Config.MARGIN + 15;
         // now generating the random balls
-        for (int i = 0; i < numballs; i++) {
+        for (int i = 0; i < numBalls; i++) {
             int radius = Config.MIN_RADIUS + ((int) (Math.random() * (Config.MAX_RADIUS - Config.MIN_RADIUS)));
             ball[i] = new Ball(color[i % color.length], radius);
             ball[i].setCoords(x, y);
@@ -35,7 +35,7 @@ public class Program {
                 x = Config.MARGIN + 15;
                 y += dy;
             }
-            ball[i].setAngle(Math.toRadians(45 + (int) (Math.random() * 90)));
+            ball[i].setDegreesAngle(45 + (int) (Math.random() * 90));
             ball[i].setSpeed(Ball.MIN_SPEED + (int) (Math.random() * (Ball.MAX_SPEED - Ball.MIN_SPEED)));
             motor.addBall(ball[i]);
         }

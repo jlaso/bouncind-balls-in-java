@@ -10,14 +10,16 @@ final class Config {
 
 	// relatives to main window
     final static String TITLE   = "Bouncing balls by Joseluis Laso";
-    final static int	WIDTH   = 1350;
-    final static int    HEIGHT  = 650;
+    final static int	WIDTH   = 350;
+    final static int    HEIGHT  = 460;
     final static Color  BGCOLOR = new Color(200,200,200);
 
     final static int	MARGIN  = 10;
     final static int	BOTTOM_MARGIN  = 100;
     final static int    WIDTH_E = WIDTH-MARGIN;
+    final static int    WIDTH_EE = WIDTH-MARGIN-MARGIN;
     final static int    HEIGHT_E= HEIGHT-BOTTOM_MARGIN;
+    final static int    HEIGHT_EE= HEIGHT-MARGIN-BOTTOM_MARGIN;
 
     final static int    CENTERX = (WIDTH_E-MARGIN)/2;
     final static int    CENTERY = (HEIGHT_E-MARGIN-MARGIN)/2;
@@ -27,7 +29,7 @@ final class Config {
     final static int    MIN_TRANSP = 50;
     final static int    MAX_TRANSP = 255;
 
-    final static int    MIN_RADIUS = 15;
-    final static int    MAX_RADIUS = 25;
+    final static int    MIN_RADIUS = 20;
+    final static int    MAX_RADIUS = 20;
 
 }
